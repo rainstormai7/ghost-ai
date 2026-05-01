@@ -1,4 +1,4 @@
-We need the basse chrome components that frame every editor screen - the top navbar and the left sidebar shell. These will be reused and extended in every chapter that follows.
+We need the base chrome components that frame every editor screen - the top navbar and the left sidebar shell. These will be reused and extended in every chapter that follows.
 
 ### Editor Navbar
 

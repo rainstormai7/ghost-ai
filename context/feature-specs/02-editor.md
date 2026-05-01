@@ -25,7 +25,7 @@ Requirements:
 - accepts `isOpen` and `onClose` props
 - header with `projects` title + close button
 - shadcn `Tabs`:
-    - Mr Projects
+    - My Projects
     - Shared
 - both tabs show empty placeholder state
 - full-width `New Project` button at the bottom with `Plus` icon

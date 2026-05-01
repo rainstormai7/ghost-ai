@@ -1,7 +1,7 @@
 export default function Home() {
   return (
-    <main>
+    <div className="flex h-screen items-center justify-center ">
       <p>ghost AI</p>
-    </main>
+    </div>
   );
 }

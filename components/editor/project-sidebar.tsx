@@ -35,7 +35,7 @@ export function ProjectSidebar({ isOpen, onClose }: ProjectSidebarProps) {
         <Tabs defaultValue="my-projects" className="flex flex-1 flex-col">
           <TabsList className="w-full">
             <TabsTrigger value="my-projects" className="flex-1">
-              Mr Projects
+              My Projects
             </TabsTrigger>
             <TabsTrigger value="shared" className="flex-1">
               Shared

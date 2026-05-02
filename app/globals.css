@@ -135,3 +135,23 @@
         @apply font-sans;
     }
 }
+
+/* Clerk component overrides — mapped from project design tokens */
+:root {
+    --clerk-font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+    --clerk-font-family-buttons: var(--font-geist-sans), ui-sans-serif, system-ui,
+        sans-serif;
+    --clerk-color-background: var(--bg-elevated);
+    --clerk-color-foreground: var(--text-primary);
+    --clerk-color-primary: var(--accent-primary);
+    --clerk-color-primary-foreground: var(--bg-base);
+    --clerk-color-neutral: var(--border-subtle);
+    --clerk-color-border: var(--border-default);
+    --clerk-color-input: var(--bg-subtle);
+    --clerk-color-input-foreground: var(--text-primary);
+    --clerk-color-muted: var(--bg-subtle);
+    --clerk-color-muted-foreground: var(--text-muted);
+    --clerk-color-ring: var(--accent-primary);
+    --clerk-color-shadow: transparent;
+    --clerk-color-modal-backdrop: rgba(8, 8, 9, 0.7);
+}

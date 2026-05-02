@@ -11,14 +11,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import type { UseProjectDialogsReturn } from "@/hooks/use-project-dialogs"
+import type { UseProjectActionsReturn } from "@/hooks/use-project-actions"
 import {
   filterProjectNameInput,
   isValidProjectNameForSlug,
 } from "@/lib/project-slug"
 
 interface ProjectDialogsProps {
-  dialogs: UseProjectDialogsReturn
+  dialogs: UseProjectActionsReturn
 }
 
 export function ProjectDialogs({ dialogs }: ProjectDialogsProps) {
@@ -30,7 +30,7 @@ export function ProjectDialogs({ dialogs }: ProjectDialogsProps) {
     setCreateName,
     renameName,
     setRenameName,
-    createSlugPreview,
+    roomIdPreview,
     isPending,
     closeDialog,
     submitCreate,
@@ -63,7 +63,7 @@ export function ProjectDialogs({ dialogs }: ProjectDialogsProps) {
       <Dialog
         open={dialog === "create"}
         onOpenChange={(open) => {
-          if (!open) closeDialog()
+          if (!open && !isPending) closeDialog()
         }}
       >
         <DialogContent showCloseButton className="sm:max-w-md">
@@ -106,9 +106,9 @@ export function ProjectDialogs({ dialogs }: ProjectDialogsProps) {
               </p>
             ) : null}
             <p className="text-xs text-copy-secondary">
-              <span className="font-medium text-copy-primary">Slug preview:</span>{" "}
-              {createSlugPreview ? (
-                <span className="font-mono text-foreground">{createSlugPreview}</span>
+              <span className="font-medium text-copy-primary">Room ID preview:</span>{" "}
+              {roomIdPreview ? (
+                <span className="font-mono text-foreground">{roomIdPreview}</span>
               ) : (
                 <span className="text-copy-muted">—</span>
               )}
@@ -137,7 +137,7 @@ export function ProjectDialogs({ dialogs }: ProjectDialogsProps) {
       <Dialog
         open={dialog === "rename" && renameTarget !== null}
         onOpenChange={(open) => {
-          if (!open) closeDialog()
+          if (!open && !isPending) closeDialog()
         }}
       >
         <DialogContent showCloseButton className="sm:max-w-md">
@@ -211,7 +211,7 @@ export function ProjectDialogs({ dialogs }: ProjectDialogsProps) {
       <Dialog
         open={dialog === "delete" && deleteTarget !== null}
         onOpenChange={(open) => {
-          if (!open) closeDialog()
+          if (!open && !isPending) closeDialog()
         }}
       >
         <DialogContent showCloseButton className="sm:max-w-md">

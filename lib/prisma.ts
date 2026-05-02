@@ -4,7 +4,9 @@ import { Pool } from "pg";
 
 import { PrismaClient } from "@/app/generated/prisma/client";
 
-function createPrismaClient() {
+type PrismaClientSingleton = InstanceType<typeof PrismaClient>;
+
+function createPrismaClient(): PrismaClientSingleton {
   const url = process.env.DATABASE_URL;
   if (!url) {
     throw new Error("DATABASE_URL is not set");
@@ -13,7 +15,7 @@ function createPrismaClient() {
   if (url.startsWith("prisma+postgres://")) {
     return new PrismaClient({
       accelerateUrl: url,
-    }).$extends(withAccelerate());
+    }).$extends(withAccelerate()) as unknown as PrismaClientSingleton;
   }
 
   const pool = new Pool({ connectionString: url });
@@ -21,8 +23,6 @@ function createPrismaClient() {
 
   return new PrismaClient({ adapter });
 }
-
-type PrismaClientSingleton = ReturnType<typeof createPrismaClient>;
 
 const globalForPrisma = globalThis as typeof globalThis & {
   prisma?: PrismaClientSingleton;

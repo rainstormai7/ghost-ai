@@ -1,9 +1,10 @@
 "use client"
 
+import Link from "next/link"
 import { Pencil, Plus, Trash2, X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import type { MockProject } from "@/lib/mock-projects"
+import type { EditorProject } from "@/lib/editor-project"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -11,11 +12,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 interface ProjectSidebarProps {
   isOpen: boolean
   onClose: () => void
-  ownedProjects: MockProject[]
-  sharedProjects: MockProject[]
+  ownedProjects: EditorProject[]
+  sharedProjects: EditorProject[]
   onNewProject: () => void
-  onRenameProject: (project: MockProject) => void
-  onDeleteProject: (project: MockProject) => void
+  onRenameProject: (project: EditorProject) => void
+  onDeleteProject: (project: EditorProject) => void
 }
 
 function ProjectListRow({
@@ -23,9 +24,9 @@ function ProjectListRow({
   onRename,
   onDelete,
 }: {
-  project: MockProject
-  onRename: (project: MockProject) => void
-  onDelete: (project: MockProject) => void
+  project: EditorProject
+  onRename: (project: EditorProject) => void
+  onDelete: (project: EditorProject) => void
 }) {
   return (
     <div
@@ -34,9 +35,12 @@ function ProjectListRow({
         "hover:bg-muted/50"
       )}
     >
-      <span className="min-w-0 flex-1 truncate text-sm text-copy-primary">
+      <Link
+        href={`/editor/${project.id}`}
+        className="min-w-0 flex-1 truncate text-left text-sm text-copy-primary hover:underline"
+      >
         {project.name}
-      </span>
+      </Link>
       {project.isOwner ? (
         <div className="flex shrink-0 items-center gap-0.5">
           <Button

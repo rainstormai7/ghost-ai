@@ -14,6 +14,8 @@ interface ProjectSidebarProps {
   onClose: () => void
   ownedProjects: EditorProject[]
   sharedProjects: EditorProject[]
+  /** Highlights the open workspace row when set. */
+  activeProjectId?: string | null
   onNewProject: () => void
   onRenameProject: (project: EditorProject) => void
   onDeleteProject: (project: EditorProject) => void
@@ -21,20 +23,34 @@ interface ProjectSidebarProps {
 
 function ProjectListRow({
   project,
+  activeProjectId,
   onRename,
   onDelete,
 }: {
   project: EditorProject
+  activeProjectId?: string | null
   onRename: (project: EditorProject) => void
   onDelete: (project: EditorProject) => void
 }) {
+  const isActive = activeProjectId === project.id
+
   return (
     <div
       className={cn(
-        "flex items-center gap-1 rounded-lg py-1.5 pr-1 pl-2",
-        "hover:bg-muted/50"
+        "flex items-center gap-1.5 rounded-lg py-1.5 pr-1 pl-2",
+        isActive
+          ? "bg-brand/10 ring-1 ring-brand/20"
+          : "hover:bg-elevated"
       )}
     >
+      {/* Active dot indicator */}
+      <span
+        aria-hidden
+        className={cn(
+          "h-1.5 w-1.5 shrink-0 rounded-full transition-opacity",
+          isActive ? "bg-brand opacity-100" : "opacity-0"
+        )}
+      />
       <Link
         href={`/editor/${project.id}`}
         className="min-w-0 flex-1 truncate text-left text-sm text-copy-primary hover:underline"
@@ -74,6 +90,7 @@ export function ProjectSidebar({
   onClose,
   ownedProjects,
   sharedProjects,
+  activeProjectId = null,
   onNewProject,
   onRenameProject,
   onDeleteProject,
@@ -133,6 +150,7 @@ export function ProjectSidebar({
                       <ProjectListRow
                         key={project.id}
                         project={project}
+                        activeProjectId={activeProjectId}
                         onRename={onRenameProject}
                         onDelete={onDeleteProject}
                       />
@@ -157,6 +175,7 @@ export function ProjectSidebar({
                       <ProjectListRow
                         key={project.id}
                         project={project}
+                        activeProjectId={activeProjectId}
                         onRename={onRenameProject}
                         onDelete={onDeleteProject}
                       />
@@ -171,8 +190,7 @@ export function ProjectSidebar({
         <div className="border-t border-surface-border px-3 py-3">
           <Button
             type="button"
-            variant="outline"
-            className="w-full gap-2"
+            className="w-full gap-2 bg-brand text-base hover:bg-brand/85 focus-visible:ring-brand/40"
             onClick={onNewProject}
           >
             <Plus className="h-4 w-4" />

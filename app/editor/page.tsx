@@ -11,10 +11,12 @@ export default async function EditorPage() {
   }
 
   const user = await currentUser()
-  const primaryEmail = user?.primaryEmailAddress?.emailAddress ?? null
+  const verifiedEmails = user?.emailAddresses
+    .filter((ea) => ea.verification?.status === "verified")
+    .map((ea) => ea.emailAddress) ?? []
   const { ownedProjects, sharedProjects } = await getEditorProjectsForUser(
     userId,
-    primaryEmail,
+    verifiedEmails,
   )
 
   return (

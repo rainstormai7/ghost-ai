@@ -1,4 +1,3 @@
-import { clerkClient } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
 
 import { Prisma } from "@/app/generated/prisma/client"
@@ -25,8 +24,11 @@ export async function GET(_request: Request, context: RouteContext) {
   if ("unauthorized" in authResult) {
     return authResult.unauthorized
   }
-  const { userId, primaryEmail } = authResult
-  const identity = { userId, primaryEmail }
+  const { userId, user } = authResult
+  const verifiedEmails = user?.emailAddresses
+    .filter((ea) => ea.verification?.status === "verified")
+    .map((ea) => ea.emailAddress) ?? []
+  const identity = { userId, verifiedEmails }
 
   const { projectId } = await context.params
 
@@ -63,8 +65,11 @@ export async function POST(request: Request, context: RouteContext) {
   if ("unauthorized" in authResult) {
     return authResult.unauthorized
   }
-  const { userId, primaryEmail } = authResult
-  const identity = { userId, primaryEmail }
+  const { userId, user } = authResult
+  const verifiedEmails = user?.emailAddresses
+    .filter((ea) => ea.verification?.status === "verified")
+    .map((ea) => ea.emailAddress) ?? []
+  const identity = { userId, verifiedEmails }
 
   const { projectId } = await context.params
 
@@ -100,23 +105,20 @@ export async function POST(request: Request, context: RouteContext) {
     )
   }
 
-  try {
-    const clerk = await clerkClient()
-    const owner = await clerk.users.getUser(share.project.ownerId)
-    const ownerEmails = new Set(
-      owner.emailAddresses.map((a) => a.emailAddress.toLowerCase()),
-    )
-    if (ownerEmails.has(emailInput)) {
-      return NextResponse.json(
-        { error: "You cannot add yourself as a collaborator" },
-        { status: 400 },
-      )
-    }
-  } catch {
-    // If Clerk lookup fails, fail closed to prevent potential self-invite
+  if (!user) {
     return NextResponse.json(
       { error: "Unable to verify invite at this time" },
       { status: 503 },
+    )
+  }
+
+  const ownerEmails = new Set(
+    user.emailAddresses.map((a) => a.emailAddress.toLowerCase()),
+  )
+  if (ownerEmails.has(emailInput)) {
+    return NextResponse.json(
+      { error: "You cannot add yourself as a collaborator" },
+      { status: 400 },
     )
   }
 

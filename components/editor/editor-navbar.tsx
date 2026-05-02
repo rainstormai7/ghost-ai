@@ -76,7 +76,8 @@ export function EditorNavbar({
               type="button"
               variant="ghost"
               size="icon"
-              onClick={onAiSidebarToggle}
+              onClick={() => onAiSidebarToggle && onAiSidebarToggle()}
+              disabled={!onAiSidebarToggle}
               aria-label={
                 isAiSidebarOpen ? "Hide AI sidebar" : "Show AI sidebar"
               }

@@ -27,7 +27,7 @@ export default async function EditorWorkspacePage({ params }: PageProps) {
 
   const { ownedProjects, sharedProjects } = await getEditorProjectsForUser(
     identity.userId,
-    identity.primaryEmail,
+    identity.verifiedEmails,
   )
 
   return (

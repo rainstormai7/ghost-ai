@@ -7,23 +7,22 @@ import { slugifyProjectName } from "@/lib/project-slug"
  */
 export async function getEditorProjectsForUser(
   userId: string,
-  primaryEmail: string | null,
+  verifiedEmails: string[],
 ): Promise<{ ownedProjects: EditorProject[]; sharedProjects: EditorProject[] }> {
   const owned = await prisma.project.findMany({
     where: { ownerId: userId },
     orderBy: { updatedAt: "desc" },
   })
 
-  const email = primaryEmail?.trim()
   const shared =
-    email && email.length > 0
+    verifiedEmails.length > 0
       ? await prisma.project.findMany({
           where: {
             ownerId: { not: userId },
             collaborators: {
               some: {
                 email: {
-                  equals: email,
+                  in: verifiedEmails,
                   mode: "insensitive",
                 },
               },

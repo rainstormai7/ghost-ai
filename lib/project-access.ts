@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma"
 /** Clerk identity used for project membership checks (server-only). */
 export type ClerkProjectIdentity = {
   userId: string
-  primaryEmail: string | null
+  verifiedEmails: string[]
 }
 
 /** Minimal project fields when the user may access the workspace. */
@@ -15,7 +15,7 @@ export type AccessibleProjectSummary = {
 }
 
 /**
- * Returns the signed-in user id and primary email (server-only).
+ * Returns the signed-in user id and all verified emails (server-only).
  * Call after confirming auth in the page, or treat null userId as unauthenticated.
  */
 export async function getClerkProjectIdentity(): Promise<ClerkProjectIdentity | null> {
@@ -23,8 +23,10 @@ export async function getClerkProjectIdentity(): Promise<ClerkProjectIdentity | 
   if (!userId) return null
 
   const user = await currentUser()
-  const primaryEmail = user?.primaryEmailAddress?.emailAddress ?? null
-  return { userId, primaryEmail }
+  const verifiedEmails = user?.emailAddresses
+    .filter((ea) => ea.verification?.status === "verified")
+    .map((ea) => ea.emailAddress) ?? []
+  return { userId, verifiedEmails }
 }
 
 /**
@@ -35,14 +37,13 @@ export async function findAccessibleProjectForUser(
   roomId: string,
   identity: ClerkProjectIdentity,
 ): Promise<AccessibleProjectSummary | null> {
-  const email = identity.primaryEmail?.trim()
   const collaboratorClause =
-    email && email.length > 0
+    identity.verifiedEmails.length > 0
       ? ({
           collaborators: {
             some: {
               email: {
-                equals: email,
+                in: identity.verifiedEmails,
                 mode: "insensitive" as const,
               },
             },
@@ -87,15 +88,14 @@ export async function getProjectShareAccess(
     return { ok: true, project, isOwner: true }
   }
 
-  const email = identity.primaryEmail?.trim()
-  if (!email || email.length === 0) {
+  if (identity.verifiedEmails.length === 0) {
     return { ok: false, status: 403 }
   }
 
   const collaborator = await prisma.projectCollaborator.findFirst({
     where: {
       projectId,
-      email: { equals: email, mode: "insensitive" },
+      email: { in: identity.verifiedEmails, mode: "insensitive" },
     },
   })
   if (!collaborator) {

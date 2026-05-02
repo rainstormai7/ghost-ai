@@ -155,3 +155,11 @@
     --clerk-color-shadow: transparent;
     --clerk-color-modal-backdrop: rgba(8, 8, 9, 0.7);
 }
+
+/*
+ * Liveblocks portaled floating UI (.lb-tooltip, etc.): explicit z-index per
+ * Liveblocks docs / project skill `liveblocks-best-practices` → `z-index-issues`.
+ */
+.lb-portal {
+    z-index: 100;
+}

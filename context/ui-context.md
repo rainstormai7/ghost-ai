@@ -95,10 +95,11 @@ shadcn/ui on top of Tailwind. No custom design system. Components live in `compo
 
 ## Layout Patterns
 
-- Editor workspace: full-viewport layout — floating sidebar overlay on the left, center canvas, slide-over AI sidebar on the right.
-- Sidebars: floating overlay with dark semi-transparent background and subtle border.
+- Editor **project workspace** (`/editor/[roomId]`): page background is `bg-base` with **gutters** (`p-3`, `gap-3` between regions). **Three island panels** — Projects list, canvas, and AI Copilot — each use `rounded-2xl`, `border-surface-border`, `bg-surface`, and `shadow-sm`, and do not run edge-to-edge under the header.
+- Editor **home** (`/editor`): projects sidebar remains a **slide-over overlay** from the left for quick navigation.
 - Modals and dialogs: centered overlay, `rounded-3xl`, dark background with backdrop blur.
-- Navbar: top bar with dark background and bottom border.
+- Workspace **navbar**: project title (`font-semibold`); subtitle is **sentence case** “Workspace” (`text-xs`, `text-copy-muted`, `normal-case`, no wide tracking). **Share** is a filled control: `rounded-xl`, `border-surface-border`, `bg-elevated`, icon + “Share” label from `sm` up. **AI** is a teal `bg-brand`, `text-base` (near-black on accent), `Sparkles` + “AI” label; it toggles the AI panel (not a generic panel icon). Pressed state may use a subtle `ring-brand` focus.
+- **Projects** tab strip: outer `rounded-xl` track `bg-subtle` + border; active tab uses **`bg-base`** pill with **`text-copy-primary`**; inactive tabs stay muted grey.
 
 ## Icons
 

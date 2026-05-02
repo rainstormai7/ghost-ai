@@ -39,7 +39,6 @@ export function useProjectActions() {
     setCreateName("")
     setCreateRoomSuffix("")
     setRenameName("")
-    setIsPending(false)
   }, [])
 
   const openCreate = useCallback(() => {
@@ -66,6 +65,7 @@ export function useProjectActions() {
   }, [createName, createRoomSuffix])
 
   const submitCreate = useCallback(async () => {
+    if (isPending) return
     const name = createName.trim()
     if (!name || !isValidProjectNameForSlug(createName)) return
     setIsPending(true)
@@ -85,9 +85,10 @@ export function useProjectActions() {
     } finally {
       setIsPending(false)
     }
-  }, [createName, closeDialog, router])
+  }, [createName, closeDialog, router, isPending])
 
   const submitRename = useCallback(async () => {
+    if (isPending) return
     if (!renameTarget) return
     const name = renameName.trim()
     if (!name || !isValidProjectNameForSlug(renameName)) return
@@ -104,9 +105,10 @@ export function useProjectActions() {
     } finally {
       setIsPending(false)
     }
-  }, [renameTarget, renameName, closeDialog, router])
+  }, [renameTarget, renameName, closeDialog, router, isPending])
 
   const submitDelete = useCallback(async () => {
+    if (isPending) return
     if (!deleteTarget) return
     const deletedId = deleteTarget.id
     setIsPending(true)
@@ -123,7 +125,7 @@ export function useProjectActions() {
     } finally {
       setIsPending(false)
     }
-  }, [deleteTarget, closeDialog, pathname, router])
+  }, [deleteTarget, closeDialog, pathname, router, isPending])
 
   return {
     dialog,

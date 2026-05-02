@@ -28,11 +28,14 @@ export async function POST(request: Request) {
   }
   const { userId } = authResult
 
-  const raw = await request.json().catch(() => null)
-  const body =
-    raw !== null && typeof raw === "object" && !Array.isArray(raw)
-      ? (raw as Record<string, unknown>)
-      : {}
+  const raw = await request.json().catch(() => undefined)
+  if (raw === undefined) {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
+  }
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
+  }
+  const body = raw as Record<string, unknown>
 
   let name = DEFAULT_PROJECT_NAME
   if (typeof body.name === "string") {

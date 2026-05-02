@@ -63,7 +63,7 @@ export function ProjectDialogs({ dialogs }: ProjectDialogsProps) {
       <Dialog
         open={dialog === "create"}
         onOpenChange={(open) => {
-          if (!open) closeDialog()
+          if (!open && !isPending) closeDialog()
         }}
       >
         <DialogContent showCloseButton className="sm:max-w-md">
@@ -137,7 +137,7 @@ export function ProjectDialogs({ dialogs }: ProjectDialogsProps) {
       <Dialog
         open={dialog === "rename" && renameTarget !== null}
         onOpenChange={(open) => {
-          if (!open) closeDialog()
+          if (!open && !isPending) closeDialog()
         }}
       >
         <DialogContent showCloseButton className="sm:max-w-md">
@@ -211,7 +211,7 @@ export function ProjectDialogs({ dialogs }: ProjectDialogsProps) {
       <Dialog
         open={dialog === "delete" && deleteTarget !== null}
         onOpenChange={(open) => {
-          if (!open) closeDialog()
+          if (!open && !isPending) closeDialog()
         }}
       >
         <DialogContent showCloseButton className="sm:max-w-md">

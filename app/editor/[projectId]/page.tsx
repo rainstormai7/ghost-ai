@@ -1,5 +1,5 @@
 import { auth, currentUser } from "@clerk/nextjs/server"
-import { redirect } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 
 import { EditorShell } from "@/components/editor/editor-shell"
 import { getEditorProjectsForUser } from "@/lib/editor-projects-data"
@@ -21,6 +21,13 @@ export default async function EditorWorkspacePage({ params }: PageProps) {
     userId,
     primaryEmail,
   )
+
+  const canAccessProject = [...ownedProjects, ...sharedProjects].some(
+    (p) => p.id === projectId,
+  )
+  if (!canAccessProject) {
+    notFound()
+  }
 
   return (
     <EditorShell

@@ -40,20 +40,21 @@ export async function PATCH(request: Request, context: RouteContext) {
   const existing = await prisma.project.findUnique({
     where: { id: projectId },
   })
-
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
-
   if (existing.ownerId !== userId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
-
-  const project = await prisma.project.update({
-    where: { id: projectId },
+  const updated = await prisma.project.updateMany({
+    where: { id: projectId, ownerId: userId },
     data: { name },
   })
-
+  if (updated.count === 0) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 })
+  }
+  const project = await prisma.project.findUnique({ where: { id: projectId } })
+  
   return NextResponse.json({ project })
 }
 

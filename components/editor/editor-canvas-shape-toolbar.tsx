@@ -1,6 +1,11 @@
 "use client"
 
-import type { DragEventHandler } from "react"
+import { useCallback, useRef } from "react"
+import type {
+  DragEventHandler,
+  KeyboardEventHandler,
+  MouseEventHandler,
+} from "react"
 import {
   Circle,
   Cylinder,
@@ -14,6 +19,7 @@ import { cn } from "@/lib/utils"
 import {
   CANVAS_SHAPE_DEFAULT_SIZE,
   CANVAS_SHAPE_DRAG_MIME,
+  type CanvasShapeDragPayload,
   type NodeShape,
 } from "@/types/canvas"
 
@@ -30,25 +36,52 @@ const SHAPE_ITEMS: {
   { shape: "hexagon", label: "Hexagon", Icon: Hexagon },
 ]
 
+function canvasShapePickPayload(shape: NodeShape): CanvasShapeDragPayload {
+  const { width, height } = CANVAS_SHAPE_DEFAULT_SIZE[shape]
+  return { shape, width, height }
+}
+
 function ToolbarShapeSlot({
   shape,
   iconLabel,
   Icon,
+  onInstantiateShape,
 }: {
   shape: NodeShape
   iconLabel: string
   Icon: typeof Square
+  onInstantiateShape?: (payload: CanvasShapeDragPayload) => void
 }) {
-  const dims = CANVAS_SHAPE_DEFAULT_SIZE[shape]
+  const keyboardDuplicateClickGuardRef = useRef(false)
+
+  const pick = useCallback(() => {
+    onInstantiateShape?.(canvasShapePickPayload(shape))
+  }, [shape, onInstantiateShape])
 
   const onDragStart: DragEventHandler<HTMLButtonElement> = (event) => {
-    const payload = JSON.stringify({
-      shape,
-      width: dims.width,
-      height: dims.height,
-    })
+    const payload = JSON.stringify(canvasShapePickPayload(shape))
     event.dataTransfer.setData(CANVAS_SHAPE_DRAG_MIME, payload)
     event.dataTransfer.effectAllowed = "copy"
+  }
+
+  const onClick: MouseEventHandler<HTMLButtonElement> = (event) => {
+    event.stopPropagation()
+    if (keyboardDuplicateClickGuardRef.current) {
+      keyboardDuplicateClickGuardRef.current = false
+      return
+    }
+    pick()
+  }
+
+  const onKeyDown: KeyboardEventHandler<HTMLButtonElement> = (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return
+    event.preventDefault()
+    event.stopPropagation()
+    keyboardDuplicateClickGuardRef.current = true
+    pick()
+    window.setTimeout(() => {
+      keyboardDuplicateClickGuardRef.current = false
+    }, 400)
   }
 
   return (
@@ -56,6 +89,8 @@ function ToolbarShapeSlot({
       type="button"
       draggable
       onDragStart={onDragStart}
+      onClick={onClick}
+      onKeyDown={onKeyDown}
       aria-label={`Drag ${iconLabel} onto canvas`}
       title={`${iconLabel} — drag onto canvas`}
       className={cn(
@@ -76,11 +111,16 @@ function ToolbarShapeSlot({
   )
 }
 
+export interface EditorCanvasShapeToolbarProps {
+  className?: string
+  /** Adds a node without drag (click / keyboard); typically viewport-centered in flow space. */
+  onInstantiateShape?: (payload: CanvasShapeDragPayload) => void
+}
+
 export function EditorCanvasShapeToolbar({
   className,
-}: {
-  className?: string
-}) {
+  onInstantiateShape,
+}: EditorCanvasShapeToolbarProps) {
   return (
     <nav
       aria-label="Shape palette"
@@ -90,7 +130,13 @@ export function EditorCanvasShapeToolbar({
       )}
     >
       {SHAPE_ITEMS.map(({ shape, label, Icon }) => (
-        <ToolbarShapeSlot key={shape} shape={shape} iconLabel={label} Icon={Icon} />
+        <ToolbarShapeSlot
+          key={shape}
+          shape={shape}
+          iconLabel={label}
+          Icon={Icon}
+          onInstantiateShape={onInstantiateShape}
+        />
       ))}
     </nav>
   )

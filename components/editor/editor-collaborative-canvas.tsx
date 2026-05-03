@@ -27,11 +27,13 @@ import { Cursors, useLiveblocksFlow } from "@liveblocks/react-flow"
 
 import { CanvasFlowNode } from "@/components/editor/canvas-flow-node"
 import { EditorCanvasShapeToolbar } from "@/components/editor/editor-canvas-shape-toolbar"
+import { addCanvasShapeNodeAtScreenPoint } from "@/lib/canvas-shape-placement"
 import {
   CANVAS_SHAPE_DRAG_MIME,
   NODE_COLORS,
   type CanvasEdge,
   type CanvasNode,
+  type CanvasShapeDragPayload,
   parseCanvasShapeDragJson,
 } from "@/types/canvas"
 
@@ -107,7 +109,20 @@ function EditorFlowSurface({
   })
 
   const flowRef = useRef<ReactFlowInstance<CanvasNode, CanvasEdge> | null>(null)
-  const droppedNodeSeq = useRef(0)
+
+  const instantiateShapeAtViewportCenter = useCallback(
+    (payload: CanvasShapeDragPayload) => {
+      const rf = flowRef.current
+      if (!rf) return
+      addCanvasShapeNodeAtScreenPoint(
+        rf,
+        { x: window.innerWidth / 2, y: window.innerHeight / 2 },
+        payload,
+        defaultCanvasNodeFill,
+      )
+    },
+    [],
+  )
 
   const handleDragOver: DragEventHandler<HTMLDivElement> = useCallback(
     (event) => {
@@ -125,25 +140,12 @@ function EditorFlowSurface({
       event.dataTransfer.getData(CANVAS_SHAPE_DRAG_MIME),
     )
     if (!payload) return
-    const p = rf.screenToFlowPosition({ x: event.clientX, y: event.clientY })
-    const id = `${payload.shape}-${Date.now()}-${++droppedNodeSeq.current}`
-    rf.addNodes([
-      {
-        id,
-        type: "canvasNode",
-        position: {
-          x: p.x - payload.width / 2,
-          y: p.y - payload.height / 2,
-        },
-        data: {
-          label: "",
-          color: defaultCanvasNodeFill,
-          shape: payload.shape,
-        },
-        width: payload.width,
-        height: payload.height,
-      },
-    ])
+    addCanvasShapeNodeAtScreenPoint(
+      rf,
+      { x: event.clientX, y: event.clientY },
+      payload,
+      defaultCanvasNodeFill,
+    )
   }, [])
 
   return (
@@ -194,7 +196,9 @@ function EditorFlowSurface({
         zoomable
       />
       <Panel position="bottom-center" className="mb-14">
-        <EditorCanvasShapeToolbar />
+        <EditorCanvasShapeToolbar
+          onInstantiateShape={instantiateShapeAtViewportCenter}
+        />
       </Panel>
       <Cursors />
     </ReactFlow>

@@ -16,8 +16,6 @@ function displayNameFromClerkUser(
   const last = user.lastName?.trim() ?? "";
   const combined = [first, last].filter(Boolean).join(" ");
   if (combined) return combined;
-  const primary = user.primaryEmailAddress?.emailAddress;
-  if (primary) return primary;
   return fallbackUserId;
 }
 

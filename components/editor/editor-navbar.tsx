@@ -1,6 +1,7 @@
 "use client"
 
 import {
+  LayoutTemplate,
   PanelLeftClose,
   PanelLeftOpen,
   Share2,
@@ -22,6 +23,8 @@ interface EditorNavbarProps {
   onAiSidebarToggle?: () => void
   /** Opens the share dialog from the workspace toolbar. */
   onShareClick?: () => void
+  /** Opens starter templates import (workspace). */
+  onStarterTemplatesClick?: () => void
 }
 
 export function EditorNavbar({
@@ -32,6 +35,7 @@ export function EditorNavbar({
   isAiSidebarOpen,
   onAiSidebarToggle,
   onShareClick,
+  onStarterTemplatesClick,
 }: EditorNavbarProps) {
   const isWorkspace = Boolean(projectName)
 
@@ -76,6 +80,23 @@ export function EditorNavbar({
       <div className="flex items-center gap-2">
         {isWorkspace ? (
           <>
+            <Button
+              type="button"
+              variant="ghost"
+              size="default"
+              aria-label="Import starter template"
+              onClick={onStarterTemplatesClick}
+              disabled={!onStarterTemplatesClick}
+              className={cn(
+                "h-9 gap-2 rounded-xl border border-surface-border bg-elevated px-3 text-copy-primary hover:bg-subtle hover:text-copy-primary",
+                !onStarterTemplatesClick && "pointer-events-none opacity-50",
+              )}
+            >
+              <LayoutTemplate className="h-4 w-4 shrink-0" />
+              <span className="hidden text-sm font-medium sm:inline">
+                Templates
+              </span>
+            </Button>
             <Button
               type="button"
               variant="ghost"

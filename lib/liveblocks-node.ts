@@ -31,22 +31,21 @@ const globalForLiveblocks = globalThis as typeof globalThis & {
   liveblocksNode?: Liveblocks;
 };
 
-function getLiveblocksNodeInstance(): Liveblocks {
-  return (
-    globalForLiveblocks.liveblocksNode ?? createLiveblocksClient()
-  );
+/** One client per Node process; matches `lib/prisma.ts` singleton pattern. */
+const liveblocksNode: Liveblocks =
+  globalForLiveblocks.liveblocksNode ?? createLiveblocksClient();
+
+if (process.env.NODE_ENV !== "production") {
+  globalForLiveblocks.liveblocksNode = liveblocksNode;
 }
 
 /**
  * Cached singleton for the Liveblocks server client (access tokens, rooms API).
- * In development the instance is reused via `globalThis` like Prisma.
+ * In development the instance is also pinned on `globalThis` so hot reload does
+ * not accumulate clients.
  */
 export function getLiveblocksNode(): Liveblocks {
-  const client = getLiveblocksNodeInstance();
-  if (process.env.NODE_ENV !== "production") {
-    globalForLiveblocks.liveblocksNode = client;
-  }
-  return client;
+  return liveblocksNode;
 }
 
 /** Maps a stable user id to a consistent hex color from {@link CURSOR_COLOR_PALETTE}. */

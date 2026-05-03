@@ -68,7 +68,7 @@ Default node color: `#1F1F1F` with `#EDEDED` text.
 
 ### Edge Style
 
-Smooth-step path with an arrow marker. Default edge color: `#f8fafc`. Stroke width is thin — edges are visually secondary to nodes.
+Orthogonal smooth-step routing with rounded corners and a closed arrow at the target. At rest, edges use a dimmed stroke (`opacity` on the path); they brighten when hovered or selected. Hit area uses a wide invisible interaction stroke so edges are easy to pick without thickening the visible line. **Labels:** `CanvasLabeledEdge` — `getSmoothStepPath` supplies `labelX` / `labelY`; `EdgeLabelRenderer` positions a pill (saved text) or faint “Add label” hint when the edge is hovered/selected and empty. Double‑click the edge path opens a growing single-line `input` (`nodrag`, `nopan`, `nowheel`); blur, Enter, or Escape commits via `updateEdgeData` (Liveblocks flow).
 
 ### Node Shapes
 
@@ -78,12 +78,22 @@ Smooth-step path with an arrow marker. Default edge color: `#f8fafc`. Stroke wid
 - `diamond` — decision / gateway
 - `circle` — event / endpoint
 - `pill` — service / process
-- `cylinder` — database / storage
+- `cylinder` — database / storage (**3D cylinder** in `CylinderDbSvg`: base disc, body, and lid drawn to fill the SVG viewBox with `meet` scaling so the silhouette matches the node bounds; **opaque** fills; selection via stroke color)
 - `hexagon` — external system / boundary
 
 ### Connection Handles
 
-Small white circular handles, hidden by default, revealed on node hover. Appear at all four sides of a node.
+Small white circular handles with a dark border at the four cardinal sides of each node (stacked source + target per side for loose mode). **Visibility:** hidden by default; they fade in on **node hover** (`group-hover` on the node wrapper) and stay fully visible while **any connection drag is in progress** so remote handles remain targets. Interaction uses XYFlow `Handle` components; edges sync through Liveblocks like nodes.
+
+### Node Resize & Inline Label
+
+**Resize:** When a node is selected, XYFlow `NodeResizer` shows subtle corner/edge controls (`--border-subtle` lines, small `--bg-elevated` handles). Minimum size is enforced in flow space (`CANVAS_NODE_MIN_SIZE` in `types/canvas.ts`); width/height changes go through the same node state path as drag placement.
+
+**Label:** Double-click the node body to edit. An absolutely positioned textarea (classes `nodrag`, `nopan`, `nowheel`) sits over the centered label; typing calls `updateNodeData` for realtime sync. Empty display state uses muted “Add label” placeholder text; blur or `Escape` ends editing.
+
+### View & history controls
+
+Bottom-left pill (`EditorCanvasViewToolbar`, XYFlow `Panel`): zoom out, fit view, and zoom in (animated viewport changes via React Flow helpers); a thin vertical rule; undo and redo wired to Liveblocks history (`useUndo` / `useRedo` / `useCanUndo` / `useCanRedo`). Disabled undo/redo stay visually dimmed. Keyboard: `+` / `=` and `-` for zoom; `Cmd/Ctrl+Z`, `Cmd/Ctrl+Shift+Z`, and `Cmd/Ctrl+Y` for undo/redo when focus is not in an editable field (`hooks/useKeyboardShortcuts`).
 
 ### Canvas Background
 

@@ -46,11 +46,19 @@ function ToolbarShapeSlot({
   iconLabel,
   Icon,
   onInstantiateShape,
+  onPaletteDragStart,
+  onPaletteDragEnd,
 }: {
   shape: NodeShape
   iconLabel: string
   Icon: typeof Square
   onInstantiateShape?: (payload: CanvasShapeDragPayload) => void
+  onPaletteDragStart?: (
+    payload: CanvasShapeDragPayload,
+    clientX: number,
+    clientY: number,
+  ) => void
+  onPaletteDragEnd?: () => void
 }) {
   const keyboardDuplicateClickGuardRef = useRef(false)
 
@@ -59,9 +67,14 @@ function ToolbarShapeSlot({
   }, [shape, onInstantiateShape])
 
   const onDragStart: DragEventHandler<HTMLButtonElement> = (event) => {
-    const payload = JSON.stringify(canvasShapePickPayload(shape))
-    event.dataTransfer.setData(CANVAS_SHAPE_DRAG_MIME, payload)
+    const picked = canvasShapePickPayload(shape)
+    event.dataTransfer.setData(CANVAS_SHAPE_DRAG_MIME, JSON.stringify(picked))
     event.dataTransfer.effectAllowed = "copy"
+    onPaletteDragStart?.(picked, event.clientX, event.clientY)
+  }
+
+  const onDragEnd: DragEventHandler<HTMLButtonElement> = () => {
+    onPaletteDragEnd?.()
   }
 
   const onClick: MouseEventHandler<HTMLButtonElement> = (event) => {
@@ -89,6 +102,7 @@ function ToolbarShapeSlot({
       type="button"
       draggable
       onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
       onClick={onClick}
       onKeyDown={onKeyDown}
       aria-label={`Drag ${iconLabel} onto canvas`}
@@ -115,11 +129,20 @@ export interface EditorCanvasShapeToolbarProps {
   className?: string
   /** Adds a node without drag (click / keyboard); typically viewport-centered in flow space. */
   onInstantiateShape?: (payload: CanvasShapeDragPayload) => void
+  /** Drag-from-palette lifecycle for ghost preview (screen coords). */
+  onPaletteDragStart?: (
+    payload: CanvasShapeDragPayload,
+    clientX: number,
+    clientY: number,
+  ) => void
+  onPaletteDragEnd?: () => void
 }
 
 export function EditorCanvasShapeToolbar({
   className,
   onInstantiateShape,
+  onPaletteDragStart,
+  onPaletteDragEnd,
 }: EditorCanvasShapeToolbarProps) {
   return (
     <nav
@@ -136,6 +159,8 @@ export function EditorCanvasShapeToolbar({
           iconLabel={label}
           Icon={Icon}
           onInstantiateShape={onInstantiateShape}
+          onPaletteDragStart={onPaletteDragStart}
+          onPaletteDragEnd={onPaletteDragEnd}
         />
       ))}
     </nav>

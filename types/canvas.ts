@@ -37,13 +37,23 @@ export interface CanvasShapeDragPayload {
 export const CANVAS_SHAPE_DRAG_MIME =
   "application/vnd.ghost-ai.canvas-shape+json" as const
 
+/** Minimum node width/height when resizing (flow space, px). */
+export const CANVAS_NODE_MIN_SIZE = {
+  width: 72,
+  height: 48,
+} as const
+
+/** Placeholder for empty node labels (display mode). */
+export const CANVAS_NODE_LABEL_PLACEHOLDER = "Add label" as const
+
 /** Default dimensions when a shape is dropped (flow space, px). */
 export const CANVAS_SHAPE_DEFAULT_SIZE = {
   rectangle: { width: 192, height: 96 },
   diamond: { width: 156, height: 156 },
   circle: { width: 112, height: 112 },
   pill: { width: 208, height: 80 },
-  cylinder: { width: 156, height: 104 },
+  /** Taller aspect reads as a classic vertical “database” cylinder on the canvas. */
+  cylinder: { width: 132, height: 120 },
   hexagon: { width: 168, height: 112 },
 } as const satisfies Record<NodeShape, { width: number; height: number }>
 
@@ -87,5 +97,9 @@ export interface CanvasNodeData extends Record<string, unknown> {
 /** React Flow node type id for synced canvas nodes. */
 export type CanvasNode = Node<CanvasNodeData, "canvasNode">
 
+export interface CanvasEdgeData extends Record<string, unknown> {
+  label: string
+}
+
 /** React Flow edge type id for synced canvas edges. */
-export type CanvasEdge = Edge<Record<string, unknown>, "canvasEdge">
+export type CanvasEdge = Edge<CanvasEdgeData, "canvasEdge">

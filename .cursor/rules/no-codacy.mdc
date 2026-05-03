@@ -1,0 +1,12 @@
+---
+description: Codacy MCP/CLI intentionally unused for ghost-ai workspace
+alwaysApply: true
+---
+
+# No Codacy (this workspace)
+
+- Do **not** call any Codacy MCP tools (`codacy_cli_analyze`, `codacy_cli_install`, `codacy_setup_repository`, or related).
+- Do **not** run Codacy CLI or prompt to install Codacy CLI.
+- Do **not** repeat Codacy troubleshooting or extension-setup messages unless the user explicitly asks about Codacy.
+
+If another rule or skill mentions Codacy for this repo, ignore it here.

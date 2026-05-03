@@ -4,33 +4,56 @@ import "@/liveblocks.config"
 import "@liveblocks/react-flow/styles.css"
 import "@xyflow/react/dist/style.css"
 
-import { useCallback, useRef, useState, type DragEventHandler, type ReactNode } from "react"
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type DragEventHandler,
+  type MutableRefObject,
+  type ReactNode,
+} from "react"
+import { createPortal } from "react-dom"
 import {
   Background,
   BackgroundVariant,
   ConnectionMode,
+  MarkerType,
   MiniMap,
   Panel,
   ReactFlow,
+  type Connection,
   type EdgeTypes,
   type NodeTypes,
+  type OnConnectEnd,
   type ReactFlowInstance,
-  SmoothStepEdge,
 } from "@xyflow/react"
 import {
   ClientSideSuspense,
   LiveblocksProvider,
   RoomProvider,
+  useCanRedo,
+  useCanUndo,
   useErrorListener,
+  useRedo,
+  useUndo,
 } from "@liveblocks/react/suspense"
 import { Cursors, useLiveblocksFlow } from "@liveblocks/react-flow"
 
+import { CanvasLabeledEdge } from "@/components/editor/canvas-labeled-edge"
+import { CanvasNodeShapeVisual } from "@/components/editor/canvas-node-shape-visual"
 import { CanvasFlowNode } from "@/components/editor/canvas-flow-node"
 import { EditorCanvasShapeToolbar } from "@/components/editor/editor-canvas-shape-toolbar"
+import { EditorCanvasViewToolbar } from "@/components/editor/editor-canvas-view-toolbar"
+import type { CanvasTemplate } from "@/components/editor/starter-templates"
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts"
+import { trySnapConnectionOnPointerUp } from "@/lib/canvas-connection-snap"
 import { addCanvasShapeNodeAtScreenPoint } from "@/lib/canvas-shape-placement"
+import { buildTemplateImportGraphMergedBelow } from "@/lib/canvas-template-merge"
 import {
   CANVAS_SHAPE_DRAG_MIME,
   NODE_COLORS,
+  canvasLabelColorForFill,
   type CanvasEdge,
   type CanvasNode,
   type CanvasShapeDragPayload,
@@ -38,7 +61,7 @@ import {
 } from "@/types/canvas"
 
 const canvasEdgeTypes: EdgeTypes = {
-  canvasEdge: SmoothStepEdge,
+  canvasEdge: CanvasLabeledEdge,
 }
 
 const canvasNodeTypes = {
@@ -46,6 +69,7 @@ const canvasNodeTypes = {
 } satisfies NodeTypes
 
 const defaultCanvasNodeFill = NODE_COLORS[0].fill
+const TEMPLATE_FIT_MS = 250
 
 function LiveCanvasConnectionErrors({
   children,
@@ -92,15 +116,19 @@ function LiveCanvasConnectionErrors({
 
 function EditorFlowSurface({
   minimapRightRailInset,
+  importFlowRef,
 }: {
   minimapRightRailInset?: string | null
+  importFlowRef?: MutableRefObject<
+    ((template: CanvasTemplate) => void) | null
+  >
 }) {
   const {
     nodes,
     edges,
     onNodesChange,
     onEdgesChange,
-    onConnect,
+    onConnect: liveblocksOnConnect,
     onDelete,
   } = useLiveblocksFlow<CanvasNode, CanvasEdge>({
     suspense: true,
@@ -108,7 +136,104 @@ function EditorFlowSurface({
     edges: { initial: [] },
   })
 
+  /** Liveblocks stores edges via `addEdge(connection, [])`; merge RF defaults so `type` / markers apply. */
+  const handleConnect = useCallback(
+    (connection: Connection) => {
+      liveblocksOnConnect({
+        ...connection,
+        type: "canvasEdge",
+        data: { label: "" },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: 18,
+          height: 18,
+          color: "var(--text-primary)",
+        },
+        style: {
+          stroke: "var(--text-primary)",
+          strokeWidth: 1.35,
+          strokeLinecap: "round",
+          strokeLinejoin: "round",
+        },
+      } as Connection)
+    },
+    [liveblocksOnConnect],
+  )
+
+  const handleConnectEnd = useCallback<OnConnectEnd>(
+    (event, connectionState) => {
+      const rf = flowRef.current
+      if (!rf?.viewportInitialized) return
+      const snapped = trySnapConnectionOnPointerUp(
+        rf,
+        event,
+        connectionState,
+        ConnectionMode.Loose,
+      )
+      if (snapped) handleConnect(snapped)
+    },
+    [handleConnect],
+  )
+
   const flowRef = useRef<ReactFlowInstance<CanvasNode, CanvasEdge> | null>(null)
+
+  const undo = useUndo()
+  const redo = useRedo()
+  const canUndo = useCanUndo()
+  const canRedo = useCanRedo()
+
+  useKeyboardShortcuts(flowRef, {
+    onUndo: undo,
+    onRedo: redo,
+    canUndo,
+    canRedo,
+  })
+
+  const [paletteDragPreview, setPaletteDragPreview] = useState<{
+    payload: CanvasShapeDragPayload
+    screenX: number
+    screenY: number
+    zoom: number
+  } | null>(null)
+
+  const paletteDragPreviewActive = paletteDragPreview !== null
+
+  useEffect(() => {
+    if (!paletteDragPreviewActive) return
+    const onDocDragOver = (event: DragEvent) => {
+      event.preventDefault()
+      const zoom = flowRef.current?.getViewport().zoom ?? 1
+      setPaletteDragPreview((prev) =>
+        prev
+          ? {
+              ...prev,
+              screenX: event.clientX,
+              screenY: event.clientY,
+              zoom,
+            }
+          : null,
+      )
+    }
+    document.addEventListener("dragover", onDocDragOver)
+    return () => document.removeEventListener("dragover", onDocDragOver)
+  }, [paletteDragPreviewActive])
+
+  const handlePaletteDragStart = useCallback(
+    (payload: CanvasShapeDragPayload, clientX: number, clientY: number) => {
+      const zoom = flowRef.current?.getViewport().zoom ?? 1
+      setPaletteDragPreview({
+        payload,
+        screenX: clientX,
+        screenY: clientY,
+        zoom,
+      })
+    },
+    [],
+  )
+
+  const handlePaletteDragEnd = useCallback(() => {
+    setPaletteDragPreview(null)
+  }, [])
 
   const instantiateShapeAtViewportCenter = useCallback(
     (payload: CanvasShapeDragPayload) => {
@@ -148,15 +273,101 @@ function EditorFlowSurface({
     )
   }, [])
 
+  const importTemplate = useCallback(
+    (template: CanvasTemplate) => {
+      if (template.nodes.length === 0) return
+
+      const { nodes: importedNodes, edges: importedEdges } =
+        buildTemplateImportGraphMergedBelow(template, nodes)
+
+      onNodesChange([
+        ...nodes
+          .filter((n) => n.selected)
+          .map((n) => ({
+            type: "select" as const,
+            id: n.id,
+            selected: false as const,
+          })),
+        ...importedNodes.map((item) => ({
+          type: "add" as const,
+          item,
+        })),
+      ])
+
+      onEdgesChange([
+        ...edges
+          .filter((e) => e.selected)
+          .map((e) => ({
+            type: "select" as const,
+            id: e.id,
+            selected: false as const,
+          })),
+        ...importedEdges.map((item) => ({
+          type: "add" as const,
+          item,
+        })),
+      ])
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const rf = flowRef.current
+          if (rf?.viewportInitialized && importedNodes.length > 0) {
+            void rf.fitView({
+              nodes: importedNodes.map((n) => ({ id: n.id })),
+              padding: 0.2,
+              duration: TEMPLATE_FIT_MS,
+            })
+          }
+        })
+      })
+    },
+    [nodes, edges, onNodesChange, onEdgesChange],
+  )
+
+  useEffect(() => {
+    if (!importFlowRef) return
+    importFlowRef.current = importTemplate
+    return () => {
+      importFlowRef.current = null
+    }
+  }, [importFlowRef, importTemplate])
+
+  const paletteGhost =
+    paletteDragPreview &&
+    createPortal(
+      <div
+        className="pointer-events-none fixed z-10050"
+        style={{
+          left: paletteDragPreview.screenX,
+          top: paletteDragPreview.screenY,
+          width: paletteDragPreview.payload.width * paletteDragPreview.zoom,
+          height: paletteDragPreview.payload.height * paletteDragPreview.zoom,
+          transform: "translate(-50%, -50%)",
+        }}
+      >
+        <CanvasNodeShapeVisual
+          shape={paletteDragPreview.payload.shape}
+          fill={defaultCanvasNodeFill}
+          label=""
+          labelColor={canvasLabelColorForFill(defaultCanvasNodeFill)}
+          variant="ghost"
+        />
+      </div>,
+      document.body,
+    )
+
   return (
-    <ReactFlow<CanvasNode, CanvasEdge>
+    <>
+      {paletteGhost}
+      <ReactFlow<CanvasNode, CanvasEdge>
       nodes={nodes}
       edges={edges}
       nodeTypes={canvasNodeTypes}
       edgeTypes={canvasEdgeTypes}
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
-      onConnect={onConnect}
+      onConnect={handleConnect}
+      onConnectEnd={handleConnectEnd}
       onDelete={onDelete}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
@@ -164,11 +375,15 @@ function EditorFlowSurface({
         flowRef.current = inst
       }}
       connectionMode={ConnectionMode.Loose}
+      connectionRadius={48}
       deleteKeyCode={["Backspace", "Delete"]}
       fitView
       fitViewOptions={{ padding: 0.2 }}
       colorMode="dark"
-      defaultEdgeOptions={{ type: "canvasEdge" }}
+      defaultEdgeOptions={{
+        type: "canvasEdge",
+        data: { label: "" },
+      }}
       className="bg-surface"
       proOptions={{ hideAttribution: true }}
     >
@@ -195,13 +410,25 @@ function EditorFlowSurface({
         pannable
         zoomable
       />
+      <Panel position="bottom-left" className="mb-14 ml-4">
+        <EditorCanvasViewToolbar
+          flowRef={flowRef}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          onUndo={undo}
+          onRedo={redo}
+        />
+      </Panel>
       <Panel position="bottom-center" className="mb-14">
         <EditorCanvasShapeToolbar
           onInstantiateShape={instantiateShapeAtViewportCenter}
+          onPaletteDragStart={handlePaletteDragStart}
+          onPaletteDragEnd={handlePaletteDragEnd}
         />
       </Panel>
       <Cursors />
-    </ReactFlow>
+      </ReactFlow>
+    </>
   )
 }
 
@@ -222,9 +449,13 @@ function CanvasLoadingFallback() {
 function EditorCollaborativeCanvasInner({
   renderError,
   minimapRightRailInset,
+  importFlowRef,
 }: {
   renderError: (payload: { title: string; detail: string }) => ReactNode
   minimapRightRailInset?: string | null
+  importFlowRef?: MutableRefObject<
+    ((template: CanvasTemplate) => void) | null
+  >
 }) {
   return (
     <LiveCanvasConnectionErrors>
@@ -235,6 +466,7 @@ function EditorCollaborativeCanvasInner({
           <ClientSideSuspense fallback={<CanvasLoadingFallback />}>
             <EditorFlowSurface
               minimapRightRailInset={minimapRightRailInset}
+              importFlowRef={importFlowRef}
             />
           </ClientSideSuspense>
         )
@@ -251,11 +483,19 @@ export interface EditorCollaborativeCanvasProps {
    * rules keep it under `z-fixed` overlays otherwise).
    */
   minimapRightRailInset?: string | null
+  /**
+   * Set by the parent; collaborative flow assigns an import handler that
+   * replaces the room canvas with a starter template (clears nodes/edges first).
+   */
+  importFlowRef?: MutableRefObject<
+    ((template: CanvasTemplate) => void) | null
+  >
 }
 
 export function EditorCollaborativeCanvas({
   roomId,
   minimapRightRailInset,
+  importFlowRef,
 }: EditorCollaborativeCanvasProps) {
   const renderConnectionError = useCallback(
     (payload: { title: string; detail: string }) => (
@@ -286,6 +526,7 @@ export function EditorCollaborativeCanvas({
         >
           <EditorCollaborativeCanvasInner
             minimapRightRailInset={minimapRightRailInset}
+            importFlowRef={importFlowRef}
             renderError={renderConnectionError}
           />
         </RoomProvider>

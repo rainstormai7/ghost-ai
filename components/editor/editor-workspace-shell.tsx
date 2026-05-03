@@ -1,10 +1,15 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { Bot, Sparkles } from "lucide-react"
 
 import { EditorCollaborativeCanvas } from "@/components/editor/editor-collaborative-canvas"
 import { EditorNavbar } from "@/components/editor/editor-navbar"
+import {
+  CANVAS_TEMPLATES,
+  type CanvasTemplate,
+} from "@/components/editor/starter-templates"
+import { StarterTemplatesModal } from "@/components/editor/starter-templates-modal"
 import { ProjectDialogs } from "@/components/editor/project-dialogs"
 import { ProjectSidebar } from "@/components/editor/project-sidebar"
 import { ShareDialog } from "@/components/editor/share-dialog"
@@ -38,6 +43,10 @@ export function EditorWorkspaceShell({
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(true)
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
+  const [starterTemplatesOpen, setStarterTemplatesOpen] = useState(false)
+  const importFlowRef = useRef<((template: CanvasTemplate) => void) | null>(
+    null,
+  )
   const actions = useProjectActions()
 
   const activeProject = useMemo(() => {
@@ -58,6 +67,13 @@ export function EditorWorkspaceShell({
         isAiSidebarOpen={isAiPanelOpen}
         onAiSidebarToggle={() => setIsAiPanelOpen((prev) => !prev)}
         onShareClick={() => setShareDialogOpen(true)}
+        onStarterTemplatesClick={() => setStarterTemplatesOpen(true)}
+      />
+      <StarterTemplatesModal
+        open={starterTemplatesOpen}
+        onOpenChange={setStarterTemplatesOpen}
+        templates={CANVAS_TEMPLATES}
+        onImport={(template) => importFlowRef.current?.(template)}
       />
       <ProjectDialogs dialogs={actions} />
       <ShareDialog
@@ -74,6 +90,7 @@ export function EditorWorkspaceShell({
       >
         <EditorCollaborativeCanvas
           roomId={roomId}
+          importFlowRef={importFlowRef}
           minimapRightRailInset={
             isAiPanelOpen ? AI_RAIL_MINIMAP_CLEARANCE : undefined
           }

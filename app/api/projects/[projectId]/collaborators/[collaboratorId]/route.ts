@@ -13,8 +13,11 @@ export async function DELETE(_request: Request, context: RouteContext) {
   if ("unauthorized" in authResult) {
     return authResult.unauthorized
   }
-  const { userId, primaryEmail } = authResult
-  const identity = { userId, primaryEmail }
+  const { userId, user } = authResult
+  const verifiedEmails = user?.emailAddresses
+    .filter((ea) => ea.verification?.status === "verified")
+    .map((ea) => ea.emailAddress) ?? []
+  const identity = { userId, verifiedEmails }
 
   const { projectId, collaboratorId } = await context.params
 

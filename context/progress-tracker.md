@@ -8,7 +8,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Current Goal
 
-- Liveblocks + React Flow on `/editor/[roomId]` using project id as the room id.
+- Extend collaborative canvas with controls, custom node shapes/colors from `types/canvas.ts`, persistence, and AI-driven graph edits (per roadmap).
 
 ## Completed
 
@@ -21,6 +21,9 @@ Update this file whenever the current phase, active feature, or implementation s
 - `07-wire-editor-home`: `lib/editor-project.ts` + `lib/editor-projects-data.ts` — server `getEditorProjectsForUser()` (owned + shared via collaborator email match). `app/editor/page.tsx` + workspace route — RSC fetch, pass lists into `EditorShell`. `hooks/use-project-actions.ts` — dialog state, room ID preview (`slugify` + short suffix), `POST/PATCH/DELETE` project APIs, `router.push` to new workspace (project id = room id), rename `router.refresh()`, delete refresh or `replace` home when active. `components/editor/editor-shell.tsx` — client chrome; `ProjectSidebar` uses real `EditorProject` rows with `Link` to workspace; `ProjectDialogs` room ID preview label. Removed `use-project-dialogs` (replaced by actions hook).
 - `08-editor-workspace-shell`: `lib/project-access.ts` — `getClerkProjectIdentity()`, `findAccessibleProjectForUser(roomId, identity)` (owner or collaborator email). `components/editor/access-denied.tsx` — centered lock state + link to `/editor`. `app/editor/[roomId]/page.tsx` — server component: redirect unauthenticated to `/sign-in`; missing/forbidden project renders `AccessDenied` (not `notFound`). `components/editor/editor-workspace-shell.tsx` — full-viewport workspace: navbar with project title, workspace toolbar (share + AI toggle); `ProjectSidebar` with `activeProjectId` highlight; canvas placeholder + AI sidebar placeholder. `components/editor/editor-navbar.tsx` — optional workspace props; `components/editor/project-sidebar.tsx` — `activeProjectId` row highlight.
 - `09-share-dialog`: Share from workspace navbar opens `ShareDialog`. `GET/POST /api/projects/[projectId]/collaborators` — list or invite (owner-only POST); `DELETE /api/projects/[projectId]/collaborators/[collaboratorId]` — owner-only remove. `getProjectShareAccess` in `lib/project-access.ts` — 404 unknown project / 403 no access / owner vs collaborator. `lib/clerk-collaborator-enrichment.ts` — Clerk Backend `users.getUserList({ emailAddress })` for display name + avatar, fallback to email. Owners: invite input, remove, copy link with **Copied!**; collaborators: read-only list + copy link.
+- `10-liveblocks-setup`: Root `liveblocks.config.ts` — `Presence` (`cursor` nullable point + `isThinking`), `UserMeta` (`name`, `avatar`, `cursorColor`). `lib/liveblocks-node.ts` — cached `@liveblocks/node` client + `cursorColorFromUserId()`. `POST /api/liveblocks-auth` — Clerk session, `findAccessibleProjectForUser(room, identity)`, `getOrCreateRoom` with `defaultAccesses: []`, access token with Clerk name/avatar and deterministic cursor color; `403` if project inaccessible. Dependency: `@liveblocks/node` aligned with 3.18.x. Fix: collaborator DELETE route builds `ClerkProjectIdentity` (`verifiedEmails`) like GET.
+- `11-base-canvas` (`context/feature-specs/11-base-canvas.md`): `types/canvas.ts` — `NODE_COLORS`, `NODE_SHAPES`, `CanvasNodeData` (`label`, `color`, `shape`), `CanvasNode` / `CanvasEdge` (`canvasNode` / `canvasEdge`). `liveblocks.config.ts` — optional Storage `flow` typed as `LiveblocksFlow<CanvasNode, CanvasEdge>`. `components/editor/editor-collaborative-canvas.tsx` — client wrapper: `LiveblocksProvider` (`/api/liveblocks-auth`), `RoomProvider` (`id` = room), `initialPresence` (`cursor: null`, `isThinking: false`), `ClientSideSuspense` loading stub, `useErrorListener` + reload CTA on `ROOM_CONNECTION_ERROR`; `useLiveblocksFlow({ suspense: true, initial [] nodes/edges })` driving `ReactFlow` with loose connections, `fitView`, dot `Background`, `MiniMap`, `Cursors`; `SmoothStepEdge` for `canvasEdge`. `editor-workspace-shell.tsx` swaps placeholder for live canvas (`roomId`). Workspace route stays server-driven.
+- `12-shape-panel` (`context/feature-specs/12-shape-panel.md`): Bottom-center pill `EditorCanvasShapeToolbar` in a `Panel` with draggable Lucide-backed shape buttons; `CANVAS_SHAPE_DRAG_MIME` + `CanvasShapeDragPayload` / `CANVAS_SHAPE_DEFAULT_SIZE` / `parseCanvasShapeDragJson` in `types/canvas.ts`; `ReactFlow` `onDragOver` / `onDrop` + `onInit`-held `ReactFlowInstance` converts screen coords and `addNodes` as `canvasNode` with `{shape}-{timestamp}-{counter}` IDs, default neutral fill `NODE_COLORS[0].fill`, empty label; memo `CanvasFlowNode` renders bordered rectangle centered label for all shapes.
 
 ## In Progress
 
@@ -28,7 +31,7 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Next Up
 
-- Liveblocks room + canvas on workspace route.
+- Canvas authoring controls, custom nodes/edges that honor `NODE_SHAPES` / colors, Blob persistence wiring, AI mutations.
 
 ## Open Questions
 
@@ -40,4 +43,5 @@ Update this file whenever the current phase, active feature, or implementation s
 
 ## Session Notes
 
+- Workspace editor: full-bleed canvas under navbar (`fixed inset-x-0 top-14 bottom-0 z-0`); Projects + AI panels are `fixed` floating cards (`z-40`, `top-[calc(3.5rem+0.75rem)]`, `bottom-3`, gutters) and unmount when toggled off. Shape palette enlarged with `border-2`, `gap-4/5`, prominent hover (brand border/fill + glow) and active dragging state.
 - Auth UI (spacing + Clerk colors): Desktop uses `bg-surface` marketing column vs `bg-base` Clerk column; form column is `lg:justify-start` with padding matching the aside (`lg:px-14 lg:py-16`), inner wrapper `lg:mt-14` to align the card top with the headline under the logo row. Marketing aside: tighter logo→H1 (`mb-7`), subhead (`mt-4`), features (`mt-8` / `space-y-6`). Clerk: `:root` adds `--clerk-color-neutral`, `--clerk-color-ring`; `ClerkProvider` `appearance.variables` reinforce tokens; `elements.formButtonPrimary` and `footerActionLink` force brand primary + teal links so the CTA matches reference PNGs over theme defaults. **Follow-up:** Increased top breathing room — `lg:pt-24` on both columns, logo→headline `mb-10`, Clerk offset `lg:mt-17` to keep card aligned with H1; mobile form wrapper `py-12`.

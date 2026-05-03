@@ -205,15 +205,26 @@ export function StarterTemplatesModal({
   templates,
   onImport,
 }: StarterTemplatesModalProps) {
+  const importLockRef = useRef(false)
+  const [isImporting, setIsImporting] = useState(false)
+
   const handleImport = async (template: CanvasTemplate) => {
-    const result = onImport(template)
-    if (result instanceof Promise) {
-      const success = await result
-      if (success !== false) {
+    if (importLockRef.current) return
+    importLockRef.current = true
+    setIsImporting(true)
+    try {
+      const result = onImport(template)
+      if (result instanceof Promise) {
+        const success = await result
+        if (success !== false) {
+          onOpenChange(false)
+        }
+      } else if (result !== false) {
         onOpenChange(false)
       }
-    } else if (result !== false) {
-      onOpenChange(false)
+    } finally {
+      importLockRef.current = false
+      setIsImporting(false)
     }
   }
 
@@ -262,6 +273,7 @@ export function StarterTemplatesModal({
                   type="button"
                   variant="outline"
                   size="lg"
+                  disabled={isImporting}
                   className="h-10 w-full gap-2 rounded-xl border-white/25 bg-transparent text-white shadow-none hover:border-white/40 hover:bg-white/4 hover:text-white"
                   onClick={() => handleImport(template)}
                 >

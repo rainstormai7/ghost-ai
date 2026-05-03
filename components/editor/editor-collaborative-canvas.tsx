@@ -36,6 +36,7 @@ import {
   useCanUndo,
   useErrorListener,
   useRedo,
+  useRoom,
   useUndo,
 } from "@liveblocks/react/suspense"
 import { Cursors, useLiveblocksFlow } from "@liveblocks/react-flow"
@@ -136,6 +137,8 @@ function EditorFlowSurface({
     edges: { initial: [] },
   })
 
+  const room = useRoom()
+
   /** Liveblocks stores edges via `addEdge(connection, [])`; merge RF defaults so `type` / markers apply. */
   const handleConnect = useCallback(
     (connection: Connection) => {
@@ -176,6 +179,13 @@ function EditorFlowSurface({
   )
 
   const flowRef = useRef<ReactFlowInstance<CanvasNode, CanvasEdge> | null>(null)
+
+  const setFlowRef = useCallback(
+    (inst: ReactFlowInstance<CanvasNode, CanvasEdge>) => {
+      flowRef.current = inst
+    },
+    [],
+  )
 
   const undo = useUndo()
   const redo = useRedo()
@@ -280,33 +290,38 @@ function EditorFlowSurface({
       const { nodes: importedNodes, edges: importedEdges } =
         buildTemplateImportGraphMergedBelow(template, nodes)
 
-      onNodesChange([
-        ...nodes
-          .filter((n) => n.selected)
-          .map((n) => ({
-            type: "select" as const,
-            id: n.id,
-            selected: false as const,
+      room.history.pause()
+      try {
+        onNodesChange([
+          ...nodes
+            .filter((n) => n.selected)
+            .map((n) => ({
+              type: "select" as const,
+              id: n.id,
+              selected: false as const,
+            })),
+          ...importedNodes.map((item) => ({
+            type: "add" as const,
+            item,
           })),
-        ...importedNodes.map((item) => ({
-          type: "add" as const,
-          item,
-        })),
-      ])
+        ])
 
-      onEdgesChange([
-        ...edges
-          .filter((e) => e.selected)
-          .map((e) => ({
-            type: "select" as const,
-            id: e.id,
-            selected: false as const,
+        onEdgesChange([
+          ...edges
+            .filter((e) => e.selected)
+            .map((e) => ({
+              type: "select" as const,
+              id: e.id,
+              selected: false as const,
+            })),
+          ...importedEdges.map((item) => ({
+            type: "add" as const,
+            item,
           })),
-        ...importedEdges.map((item) => ({
-          type: "add" as const,
-          item,
-        })),
-      ])
+        ])
+      } finally {
+        room.history.resume()
+      }
 
       return new Promise<boolean>((resolve) => {
         requestAnimationFrame(() => {
@@ -324,7 +339,7 @@ function EditorFlowSurface({
         })
       })
     },
-    [nodes, edges, onNodesChange, onEdgesChange],
+    [room, nodes, edges, onNodesChange, onEdgesChange],
   )
 
   useEffect(() => {
@@ -374,9 +389,7 @@ function EditorFlowSurface({
       onDelete={onDelete}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
-      onInit={(inst) => {
-        flowRef.current = inst
-      }}
+      onInit={setFlowRef}
       connectionMode={ConnectionMode.Loose}
       connectionRadius={48}
       deleteKeyCode={["Backspace", "Delete"]}

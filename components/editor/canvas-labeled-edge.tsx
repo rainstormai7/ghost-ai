@@ -75,7 +75,8 @@ export const CanvasLabeledEdge = memo(function CanvasLabeledEdge({
   }, [editing, draft])
 
   const commit = useCallback(() => {
-    updateEdgeData(id, { label: draft })
+    const trimmedLabel = draft.trim()
+    updateEdgeData(id, { label: trimmedLabel })
     setEditing(false)
   }, [draft, id, updateEdgeData])
 

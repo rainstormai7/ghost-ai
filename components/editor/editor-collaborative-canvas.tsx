@@ -120,7 +120,7 @@ function EditorFlowSurface({
 }: {
   minimapRightRailInset?: string | null
   importFlowRef?: MutableRefObject<
-    ((template: CanvasTemplate) => void) | null
+    ((template: CanvasTemplate) => Promise<boolean>) | null
   >
 }) {
   const {
@@ -274,8 +274,8 @@ function EditorFlowSurface({
   }, [])
 
   const importTemplate = useCallback(
-    (template: CanvasTemplate) => {
-      if (template.nodes.length === 0) return
+    async (template: CanvasTemplate): Promise<boolean> => {
+      if (template.nodes.length === 0) return false
 
       const { nodes: importedNodes, edges: importedEdges } =
         buildTemplateImportGraphMergedBelow(template, nodes)
@@ -308,16 +308,19 @@ function EditorFlowSurface({
         })),
       ])
 
-      requestAnimationFrame(() => {
+      return new Promise<boolean>((resolve) => {
         requestAnimationFrame(() => {
-          const rf = flowRef.current
-          if (rf?.viewportInitialized && importedNodes.length > 0) {
-            void rf.fitView({
-              nodes: importedNodes.map((n) => ({ id: n.id })),
-              padding: 0.2,
-              duration: TEMPLATE_FIT_MS,
-            })
-          }
+          requestAnimationFrame(() => {
+            const rf = flowRef.current
+            if (rf?.viewportInitialized && importedNodes.length > 0) {
+              void rf.fitView({
+                nodes: importedNodes.map((n) => ({ id: n.id })),
+                padding: 0.2,
+                duration: TEMPLATE_FIT_MS,
+              })
+            }
+            resolve(true)
+          })
         })
       })
     },
@@ -454,7 +457,7 @@ function EditorCollaborativeCanvasInner({
   renderError: (payload: { title: string; detail: string }) => ReactNode
   minimapRightRailInset?: string | null
   importFlowRef?: MutableRefObject<
-    ((template: CanvasTemplate) => void) | null
+    ((template: CanvasTemplate) => Promise<boolean>) | null
   >
 }) {
   return (
@@ -488,7 +491,7 @@ export interface EditorCollaborativeCanvasProps {
    * replaces the room canvas with a starter template (clears nodes/edges first).
    */
   importFlowRef?: MutableRefObject<
-    ((template: CanvasTemplate) => void) | null
+    ((template: CanvasTemplate) => Promise<boolean>) | null
   >
 }
 

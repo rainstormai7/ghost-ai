@@ -21,7 +21,7 @@ Replace the placeholder node renderer with proper shape rendering and a drag pre
 
 - don't rebuild shape panel layout
 - don't change how dropped nodes are created
-- don't add resize or label editing yet
+- NodeResizer and inline label editing are now included in components/editor/canvas-flow-node.tsx
 - keep drag/drop changes limited to the ghost preview only
 
 ## Check When Done

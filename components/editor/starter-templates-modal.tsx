@@ -196,7 +196,7 @@ export interface StarterTemplatesModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   templates: CanvasTemplate[]
-  onImport: (template: CanvasTemplate) => void
+  onImport: (template: CanvasTemplate) => Promise<boolean> | boolean | void
 }
 
 export function StarterTemplatesModal({
@@ -205,9 +205,16 @@ export function StarterTemplatesModal({
   templates,
   onImport,
 }: StarterTemplatesModalProps) {
-  const handleImport = (template: CanvasTemplate) => {
-    onImport(template)
-    onOpenChange(false)
+  const handleImport = async (template: CanvasTemplate) => {
+    const result = onImport(template)
+    if (result instanceof Promise) {
+      const success = await result
+      if (success !== false) {
+        onOpenChange(false)
+      }
+    } else if (result !== false) {
+      onOpenChange(false)
+    }
   }
 
   return (

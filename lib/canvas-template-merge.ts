@@ -48,11 +48,16 @@ export function buildTemplateImportGraphMergedBelow(
 
   let offsetX = 0
   let offsetY = 0
-  if (existingNodes.length > 0 && template.nodes.length > 0) {
-    const ex = boundsOfNodes(existingNodes)
+  if (template.nodes.length > 0) {
     const tn = boundsOfNodes(template.nodes)
-    offsetX = ex.minX - tn.minX
-    offsetY = ex.maxY + CANVAS_TEMPLATE_IMPORT_GAP_Y - tn.minY
+    if (existingNodes.length === 0) {
+      offsetX = -tn.minX
+      offsetY = -tn.minY
+    } else {
+      const ex = boundsOfNodes(existingNodes)
+      offsetX = ex.minX - tn.minX
+      offsetY = ex.maxY + CANVAS_TEMPLATE_IMPORT_GAP_Y - tn.minY
+    }
   }
 
   const nodes: CanvasNode[] = template.nodes.map((n) => {
@@ -69,17 +74,22 @@ export function buildTemplateImportGraphMergedBelow(
     }
   })
 
-  const edges: CanvasEdge[] = template.edges.map((e) => {
-    const source = idMap.get(e.source)
-    const target = idMap.get(e.target)
-    return {
-      ...e,
-      id: `tpl-edge-${crypto.randomUUID()}`,
-      source: source ?? e.source,
-      target: target ?? e.target,
-      selected: false,
-    }
-  })
+  const edges: CanvasEdge[] = template.edges
+    .map((e) => {
+      const source = idMap.get(e.source)
+      const target = idMap.get(e.target)
+      if (source === undefined || target === undefined) {
+        return null
+      }
+      return {
+        ...e,
+        id: `tpl-edge-${crypto.randomUUID()}`,
+        source,
+        target,
+        selected: false,
+      }
+    })
+    .filter((e): e is CanvasEdge => e !== null)
 
   return { nodes, edges }
 }

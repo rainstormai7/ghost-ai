@@ -44,9 +44,9 @@ export function EditorWorkspaceShell({
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(true)
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
   const [starterTemplatesOpen, setStarterTemplatesOpen] = useState(false)
-  const importFlowRef = useRef<((template: CanvasTemplate) => void) | null>(
-    null,
-  )
+  const importFlowRef = useRef<
+    ((template: CanvasTemplate) => Promise<boolean>) | null
+  >(null)
   const actions = useProjectActions()
 
   const activeProject = useMemo(() => {
@@ -73,7 +73,13 @@ export function EditorWorkspaceShell({
         open={starterTemplatesOpen}
         onOpenChange={setStarterTemplatesOpen}
         templates={CANVAS_TEMPLATES}
-        onImport={(template) => importFlowRef.current?.(template)}
+        onImport={async (template) => {
+          const handler = importFlowRef.current
+          if (handler) {
+            return await handler(template)
+          }
+          return false
+        }}
       />
       <ProjectDialogs dialogs={actions} />
       <ShareDialog
